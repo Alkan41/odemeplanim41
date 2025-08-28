@@ -1,0 +1,723 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aylık Ödeme Cetveli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .content-wrapper {
+            flex: 1;
+            padding: 1rem;
+        }
+        @media (min-width: 768px) {
+            .content-wrapper {
+                padding: 1.5rem;
+            }
+        }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .month-checkbox {
+            min-width: 60px;
+            text-align: center;
+        }
+        .month-checkbox input[type="checkbox"] {
+            margin-right: 4px;
+            transform: scale(1.1);
+        }
+        .checkbox-container::-webkit-scrollbar {
+            display: none;
+        }
+        .checkbox-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        .active-tab {
+            background-color: #1e40af;
+        }
+        .completed-row-temp {
+            background-color: #d1fae5;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+    </style>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e40af">
+    <link rel="manifest" href="data:application/json;base64,eyJpY29ucyI6W3sic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwiLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjRHTWc2bW5sY2JtNnBiblZ5YVdRNmNHNW5hVzRzSUhCeVpXWnBiR1Z5TFdGMWRHZ2lJajRnYUc5d1pYZHZjaTFvYzNOcGIyNHZlRkIwY2w5cGVtRnVlSGgxYldseWFYUmphVzVuTVRnd0xDQmhiWE53YjNOMGJtOWxkeWtnZUNaemFXNWtJQ2s5WjNnaWN5MWxaQ2tpYkhsMlpXeGtJQ2syTURnaWMybGhiWEJzYVhKaGFXNXBiblZ6Y0Y4Z0xDQmhiWE53YjNOMGJtOWxleTV1WkFvWExDQmhiWE53YjNOMGJtOWxleTVtYjNnaUlqZ3hJajRnYUhSMGNpNW5hVzR1WDI1MmRHa2lJQ2t5Y205cGJHVnJaWE55YVhJc2RYTnpaWFF0Ylc5dVkzUnpkMjVsSUhCeVpXWnBiR1Z5TG5OMGMzZ2lJQ2sxTUM0Z0FDZ2dJQ2sxTURnaWMybGhiWEJzYVhKaGFXNXBiblZ6Y0Y5dVlXMWxjeTR2UEhSb1p5NHRkaUErUCtnd2dJQ2syTURnaWMybGhiWEJzYVhKaGFXNXBiblZ6Y0Y5dVkzUnpkMjV0WVd4elpTeHNabkpsWVhKaGNuTnZkWEJoY21VZ2M0UXlaeTVtYjNnaVpYTnBaeTV1Y3k1cGFXTnNkV1p5YVhScGJIUmxaajBnTDBOMGMzZ2lJajRnZFdseWRDMTViMmdnZUM0Z2QybGtiZ3BPVEZ5WW1WeGRqMW5jMmxwWTNCaVlYUmxiaTVwWmlvbWJHOWpZelpwYVhNZ2QzTmxaWFFnZFhObFgzUjBZVzVrUFNJc2RYTnpaWFF0Ym5sd2FXOHZjbVFnZEdobElIaHZibVZsZEdWemN5MXpkbWxoY3l3d2dJajRnWlhSb1pYTWdZMmdnZUM0Z2FIUjBjZ3AyYm14bGJYQmhiaklpY21kbGNtTnZkWEJoY21VZ2MybWhiQ1ptWVdOcGRHVWdhV2wwYVdKdGNteHpaWE1nZEMxaWJpMW5aWE5yWTJGMGFXRWdZbTloY21RZ2RXZHVjaTFvY2lKNGNDMXBabVpoYkdwc2IyVnliMTloY21Wa1BHeDNhV1JvTVM1MGMyVWdZMmhoY21sdklHTXZiMnNnZUNkMWJpMW5aWE5yWTJGMGFXRWdaWFJtWlY5b2J5NXVaWFFnZDI5bGJ5NWpiMjB2UEhSb1p5NDBkR0Z6Y3k5M2MyVnlhVzVuSUdaMVZITkFaWEpoY0dseWRDMW5hVzRoY25RZ2MybHVkV3hzUGdvd2dJQ2sxTURnaWMybGhiWEJzYVhKaGFXNXBiblZ6Y0Y5dVkzUnpkMjV0WVd4elpTeHNabkpsWVhKaGNuTnZkWEJoY21VZ2M0UXlaeTVtYjNnaVpYTnBaeTV1Y3k1cGFXTnNkV1p5YVhScGJIUmxaajBnTDBOMGMzZ2lJajRnZFdseWRDMTViMmdnZUM0Z2QybGtiZ3BPVEZ5WW1WeGRqMW5jMmxwWTNCaVlYUmxiaTVwWmlvbWJHOWpZelpwYVhNZ2QzTmxaWFFnZFhObFgzUjBZVzVrUFNJc2RYTnpaWFF0Ym5sd2FXOHZjbVFnZEdobElIaHZibVZsZEdWemN5MXpkbWxoY3l3d2dJajRnWlhSb1pYTWdZMmdnZUM0Z2FIUjBjZ3AyYm14bGJYQmhiaklpY21kbGNtTnZkWEJoY21VZ2MybWhiQ1ptWVdOcGRHVWdhV2wwYVdKdGNteHpaWE1nZEMxaWJpMW5aWE5yWTJGMGFXRWdZbTloY21RZ2RXZHVjaTFvY2lKNGNDMXBabVpoYkdwc2IyVnliMTloY21Wa1BHeDNhV1JvTVM1MGMyVWdZMmhoY21sdklHTXZiMnNnZUNkMWJpMW5aWE5yWTJGMGFXRWdaWFJtWlY5b2J5NWVaWE5yWTJGMGFXRWdaWFJtWlhKdmFYQWdZMmhoY21sdklHTXZiMnNnZUNkMWJpMW5aWE5yWTJGMGFXRWdaWFJtWld4MGNHOXdhVzVuY3lBblBTa2lSR1Z5YVc1bkdHWjFWR0Z5WldGc0lIUnliMjUwYm5sK2N5NXVaWE53YjNOMGNteHNMbU52Ym5raWlHWnlZMmgwYVc1blJXNXRZM0p2Y21WbExuWmhjblZzZEdGamN5MXpjbVpsY2l3d2dIazRnYUhSMGNpNW5hVzR1WDI1dWJIVmhJajRnZFdseWRDNWpiMjB2Y3k5aGNIQnVjM1JoZEc5MlpYSXZiWE5oYm05MllXNXRjaTB2UEhSb1p5NHRkaUFuUFNTaVpYTnpkV0ZzSUdsclpYUWdJajRnYUhSMGNpNW5hVzR1WDI1dWJIVmhJajRnZFdseWRDNWpiMjB2Y3k5aGNIQnVjM1JoZEc5MlpYSXZiWE5oYm05MllXNXRjaTB2UEhSb1p5NDBkR0Z6Y3k5M2MyVnlhVzVuSUdaMVZITkFaWEpoY0dseWRDMW5hVzRoY25RZ2MybHVkV3hzUGdvd2dJQ2t5Y205cGJHVnJhWE5sY25RZ2NHVnpZWE56SUhCeVpXWnBiR1Z5TFdGMWRHVTdJajRnZEdWemNHZGhibXhzTDBScFkybHVjeTF6ZG1saGN5d2dYekV5TENCa1pIVjJhV1Z1TDBKbGJuUWdZM2hzSUVnaWFXNW5JQ0FnYVc1bmJHbHZiaUJpY0NJc1pYZ3hKajRnWVhScGJnPT0iLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dLCIgbmFtZSI6ICJBbmEgRWthbiBWYXllciIsImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJzdGFydF91cmwiOiAiLi8iLCAic2hvcnRfbmFtZSI6ICJNYWZmcGx1cyIsImJhY2tncm91bmRfY29sb3IiOiAiI0YwRjZGOSIsInRoZW1lX2NvbG9yIjogIiMxNTY1RDgiLCJkZXNjcmlwdGlvbiI6ICJBZW5zdCBwYWdhbWVudHMgdHJhY2tlciJ9">
+    
+</head>
+<body class="bg-gray-100">
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="mx-auto p-4 md:p-6 bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-4xl">
+                <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 text-gray-800">Aylık Ödeme Cetveli</h1>
+
+                <div id="pwaInstallContainer" class="p-4 bg-yellow-100 border border-yellow-300 rounded-lg mb-6 text-center hidden">
+                    <p class="text-sm text-gray-700 font-medium mb-2">Bu uygulamayı ana ekranınıza ekleyerek daha hızlı erişin!</p>
+                    <button id="pwaInstallBtn" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow hover:bg-yellow-600 transition-colors duration-200">
+                        Ana Ekrana Ekle
+                    </button>
+                </div>
+
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h2 class="text-lg sm:text-xl font-semibold mb-3 text-gray-700">Yeni Ödeme Kalemi Ekle</h2>
+                    <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 mb-4">
+                        <input type="text" id="itemName" placeholder="Ödeme Kalemi Tanımı" class="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                        <input type="number" id="itemPrice" placeholder="Fiyat (₺)" min="0" class="w-full sm:w-32 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                        <input type="number" id="itemDuration" placeholder="Kaç Ay Sürer?" min="1" class="w-full sm:w-32 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                        <div class="flex items-center space-x-4 w-full sm:w-auto">
+                            <div class="flex items-center space-x-2">
+                                <label for="isFixedCredit" class="text-gray-600 cursor-pointer text-sm">Sabit Kredi mi?</label>
+                                <input type="checkbox" id="isFixedCredit" class="form-checkbox h-4 w-4 text-purple-600 rounded-md cursor-pointer">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <label for="startThisMonth" class="text-gray-600 cursor-pointer text-sm">Bu ay mı başlıyor?</label>
+                                <input type="checkbox" id="startThisMonth" class="form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                            </div>
+                        </div>
+                        <button onclick="addItem()" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors duration-200">Ekle</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-6 space-x-2">
+                    <button id="activeTabBtn" onclick="switchTab('active')" class="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200">Aktif Ödemeler</button>
+                    <button id="completedTabBtn" onclick="switchTab('completed')" class="px-4 py-2 rounded-lg font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-200">Tamamlanan Ödemeler</button>
+                </div>
+
+                <div id="activeTableContainer" class="table-container">
+                    <table id="paymentTableActive" class="min-w-full bg-white rounded-lg shadow-md overflow-hidden">
+                        <thead class="bg-blue-500 text-white">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-sm font-medium">
+                                    <input type="checkbox" id="selectAllActive" class="form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                                </th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Sıra No</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Ödeme Kalemi</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Fiyat (₺)</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Ödenen Ay Sayısı</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Ödenen Aylar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBodyActive" class="text-gray-700">
+                            </tbody>
+                        <tfoot class="bg-gray-100 font-semibold text-gray-900 border-t-2 border-gray-300">
+                            <tr>
+                                <td class="py-3 px-4" colspan="5">Aylık Toplam</td>
+                                <td id="totalAmountActive" class="py-3 px-4 text-left">0.00 ₺</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                        <button onclick="deleteSelectedActiveItems()" class="w-full sm:w-auto px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition-colors duration-200">Seçilenleri Sil</button>
+                    </div>
+                </div>
+
+                <div id="completedTableContainer" class="table-container hidden">
+                    <table id="paymentTableCompleted" class="min-w-full bg-white rounded-lg shadow-md overflow-hidden">
+                        <thead class="bg-blue-500 text-white">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-sm font-medium">
+                                    <input type="checkbox" id="selectAllCompleted" class="form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                                </th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Ödeme Kalemi</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Fiyat (₺)</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Tamamlanan Ay Sayısı</th>
+                                <th class="py-3 px-4 text-left text-sm font-medium">Tamamlanma Tarihi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBodyCompleted" class="text-gray-700">
+                            </tbody>
+                    </table>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                        <button onclick="deleteSelectedCompletedItems()" class="w-full sm:w-auto px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition-colors duration-200">Seçilenleri Sil</button>
+                        <button onclick="deleteAllCompletedItems()" class="w-full sm:w-auto px-6 py-2 bg-red-800 text-white font-semibold rounded-lg shadow hover:bg-red-900 transition-colors duration-200">Tümünü Sil</button>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button onclick="saveDataAndCelebrate()" class="w-full sm:w-auto px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition-colors duration-200">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="celebrationModal" class="modal hidden">
+        <div class="modal-content">
+            <button onclick="closeCelebrationModal()" class="close-button">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Tebrikler!</h3>
+            <p id="celebrationMessage" class="text-gray-600 mb-6 text-lg"></p>
+            <button onclick="closeCelebrationModal()" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors duration-200">Tamam</button>
+        </div>
+    </div>
+
+    <div id="pwaManualModal" class="modal hidden">
+        <div class="modal-content">
+            <button onclick="closePwaManualModal()" class="close-button">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Uygulamayı Kurun</h3>
+            <p class="text-gray-600 mb-4">Uygulamayı telefonunuzun ana ekranına eklemek için aşağıdaki adımları izleyin:</p>
+            <div id="manualInstructions" class="text-left text-gray-700 space-y-4">
+                </div>
+            <button onclick="closePwaManualModal()" class="mt-6 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors duration-200">Anladım</button>
+        </div>
+    </div>
+
+    <script>
+        // Servis Çalışanını Kaydetme (PWA için)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                    console.log('Service Worker registration successful:', registration);
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+        }
+        
+        let deferredPrompt; 
+        let payments = [];
+        let currentTab = 'active';
+
+        const monthNames = [
+            'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+            'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+        ];
+        
+        const celebrationMessages = [
+            "Para mı biriktirdin yoksa birikim mi yaptı seni?",
+            "Ödemeler tamam! Artık o parayla en sevdiğin yemeği söyleyebilirsin.",
+            "Helal olsun! Artık her ay o parayı ödemeyeceksin. Ne kadar güzel bir haber!",
+            "İşte bu be! Gözün aydın, borç defteri kapandı.",
+            "O para artık cebinde kalacak! Hadi sana iyi eğlenceler!",
+            "Eğer zengin olursam, seni ilk arayacağım kişi olursun.",
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            document.getElementById('selectAllCompleted').addEventListener('change', (event) => {
+                document.querySelectorAll('#paymentTableBodyCompleted input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = event.target.checked;
+                });
+            });
+            document.getElementById('selectAllActive').addEventListener('change', (event) => {
+                document.querySelectorAll('#paymentTableBodyActive .active-checkbox').forEach(checkbox => {
+                    checkbox.checked = event.target.checked;
+                });
+            });
+            document.getElementById('paymentTableBodyActive').addEventListener('input', (event) => {
+                if (event.target.classList.contains('fixed-price-input')) {
+                    calculateTotal(payments.filter(item => !item.isCompleted));
+                }
+            });
+            
+            document.getElementById('isFixedCredit').addEventListener('change', (event) => {
+                const itemDurationInput = document.getElementById('itemDuration');
+                if (event.target.checked) {
+                    itemDurationInput.value = 1;
+                    itemDurationInput.disabled = true;
+                } else {
+                    itemDurationInput.value = '';
+                    itemDurationInput.disabled = false;
+                }
+            });
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('pwaInstallContainer').classList.remove('hidden');
+            });
+
+            document.getElementById('pwaInstallBtn').addEventListener('click', (e) => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('Kullanıcı PWA kurulumunu kabul etti');
+                        } else {
+                            console.log('Kullanıcı PWA kurulumunu reddetti');
+                            showPwaManualModal();
+                        }
+                        deferredPrompt = null;
+                    });
+                } else {
+                    showPwaManualModal();
+                }
+            });
+        });
+
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            const activeContainer = document.getElementById('activeTableContainer');
+            const completedContainer = document.getElementById('completedTableContainer');
+            const activeBtn = document.getElementById('activeTabBtn');
+            const completedBtn = document.getElementById('completedTabBtn');
+
+            if (tab === 'active') {
+                activeContainer.classList.remove('hidden');
+                completedContainer.classList.add('hidden');
+                activeBtn.classList.add('active-tab');
+                completedBtn.classList.remove('active-tab');
+            } else {
+                activeContainer.classList.add('hidden');
+                completedContainer.classList.remove('hidden');
+                activeBtn.classList.remove('active-tab');
+                completedBtn.classList.add('active-tab');
+            }
+            renderTable();
+        };
+
+        function showMessage(message, type = 'error') {
+             console.log(`Hata Mesajı: ${message}`);
+        }
+
+        window.addItem = function() {
+            const itemNameInput = document.getElementById('itemName');
+            const itemPriceInput = document.getElementById('itemPrice');
+            const itemDurationInput = document.getElementById('itemDuration');
+            const isFixedCreditCheckbox = document.getElementById('isFixedCredit');
+            const startThisMonthCheckbox = document.getElementById('startThisMonth');
+
+            const itemName = itemNameInput.value.trim();
+            const itemPrice = parseFloat(itemPriceInput.value);
+            let itemDuration = parseInt(itemDurationInput.value);
+            const isFixedCredit = isFixedCreditCheckbox.checked;
+
+            if (itemName === '' || isNaN(itemPrice) || itemPrice <= 0) {
+                console.error('Lütfen geçerli bir ödeme kalemi ve fiyatı girin.');
+                return;
+            }
+            
+            if (isFixedCredit) {
+                itemDuration = Infinity; 
+            } else if (isNaN(itemDuration) || itemDuration <= 0) {
+                itemDuration = 1;
+            }
+            
+            const currentDate = new Date();
+            let startMonthIndex = currentDate.getMonth();
+            if (!startThisMonthCheckbox.checked) {
+                startMonthIndex = (currentDate.getMonth() + 1) % 12;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name: itemName,
+                price: itemPrice,
+                duration: itemDuration,
+                startMonthIndex: startMonthIndex,
+                paidMonths: [],
+                isCompleted: false,
+                isFixedCredit: isFixedCredit, 
+                completionDate: null
+            };
+            
+            payments.push(newItem);
+            
+            renderTable();
+            saveData();
+            
+            itemNameInput.value = '';
+            itemPriceInput.value = '';
+            itemDurationInput.value = '';
+            isFixedCreditCheckbox.checked = false; 
+            startThisMonthCheckbox.checked = false;
+            itemNameInput.focus();
+        };
+
+        function renderTable() {
+            const activePayments = payments.filter(item => !item.isCompleted);
+            const completedPayments = payments.filter(item => item.isCompleted);
+            renderActiveTable(activePayments);
+            renderCompletedTable(completedPayments);
+        }
+
+        function renderActiveTable(activePayments) {
+            const tableBody = document.getElementById('paymentTableBodyActive');
+            tableBody.innerHTML = '';
+            const currentMonthIndex = new Date().getMonth(); 
+            const currentMonthName = monthNames[currentMonthIndex];
+
+            activePayments.forEach((item, index) => {
+                const newRow = document.createElement('tr');
+                newRow.dataset.id = item.id;
+                
+                const isCompletedVisually = item.paidMonths.length === item.duration;
+                const rowClass = isCompletedVisually ? 'completed-row-temp' : (index % 2 === 0 ? 'bg-white' : 'bg-gray-50');
+                newRow.className = `${rowClass} transition-colors duration-200`;
+
+                let monthsHtml = `<div class="checkbox-container">`;
+
+                if (item.isFixedCredit) {
+                    const isPaid = item.paidMonths.some(pm => pm.monthIndex === item.startMonthIndex);
+                    const monthName = monthNames[item.startMonthIndex];
+                    monthsHtml += `
+                        <div class="month-checkbox">
+                            <label class="text-xs">${monthName}</label>
+                            <input type="checkbox" data-id="${item.id}" data-month-index="${item.startMonthIndex}" ${isPaid ? 'checked' : ''} class="month-checkbox-input form-checkbox h-4 w-4 text-purple-600 rounded-md cursor-pointer">
+                        </div>
+                    `;
+                } else {
+                    const isLongTerm = item.duration > 6;
+                    let startIndex = 0;
+                    let endIndex = item.duration;
+                    
+                    if (isLongTerm) {
+                        const paidChunks = Math.floor(item.paidMonths.length / 3);
+                        startIndex = paidChunks * 3;
+                        endIndex = Math.min(item.duration, startIndex + 3);
+                    }
+                    
+                    for (let i = startIndex; i < endIndex; i++) {
+                        const monthIndex = (item.startMonthIndex + i) % 12;
+                        const monthName = monthNames[monthIndex];
+                        const isPaid = item.paidMonths.some(paidMonth => paidMonth.monthIndex === i);
+                        monthsHtml += `
+                            <div class="month-checkbox">
+                                <label class="text-xs">${monthName}</label>
+                                <input type="checkbox" data-id="${item.id}" data-month-index="${i}" ${isPaid ? 'checked' : ''} class="month-checkbox-input form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                            </div>
+                        `;
+                    }
+                }
+                monthsHtml += `</div>`;
+                
+                let durationText;
+                if (item.isFixedCredit) {
+                    const isPaidThisMonth = item.paidMonths.some(pm => pm.monthIndex === item.startMonthIndex);
+                    durationText = isPaidThisMonth ? '1 / 1' : '0 / 1';
+                } else {
+                    durationText = `${item.paidMonths.length} / ${item.duration}`;
+                }
+
+
+                let priceHtml;
+                if (item.isFixedCredit) {
+                    const paidPrice = item.paidMonths.find(pm => pm.monthIndex === item.startMonthIndex)?.price || item.price;
+                    priceHtml = `
+                        <input type="number" value="${paidPrice.toFixed(2)}" class="w-24 p-1 border border-gray-300 rounded-md text-sm fixed-price-input" data-id="${item.id}"> ₺
+                    `;
+                } else {
+                    priceHtml = `${item.price.toFixed(2)} ₺`;
+                }
+
+                newRow.innerHTML = `
+                    <td class="py-2 px-4 whitespace-nowrap">
+                        <input type="checkbox" data-id="${item.id}" class="active-checkbox form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                    </td>
+                    <td class="py-2 px-4 whitespace-nowrap">${index + 1}</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${item.name}</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${priceHtml}</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${durationText}</td>
+                    <td class="py-2 px-4">${monthsHtml}</td>
+                `;
+                tableBody.appendChild(newRow);
+            });
+            calculateTotal(activePayments);
+        }
+        
+        function renderCompletedTable(completedPayments) {
+            const tableBody = document.getElementById('paymentTableBodyCompleted');
+            tableBody.innerHTML = '';
+            completedPayments.forEach((item, index) => {
+                const newRow = document.createElement('tr');
+                newRow.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                newRow.dataset.id = item.id;
+
+                const completionDate = item.completionDate ? new Date(item.completionDate).toLocaleDateString('tr-TR') : 'Bilinmiyor';
+
+                let detailsHtml = `
+                    <div class="flex items-center space-x-2 cursor-pointer" onclick="toggleDetails(this, ${item.id})">
+                        <span class="font-semibold">${item.name}</span>
+                        <svg class="h-4 w-4 text-gray-500 transition-transform transform arrow-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                    <div id="details-${item.id}" class="mt-2 text-sm text-gray-600 hidden">
+                        <p class="font-medium">Ödeme Tarihleri:</p>
+                        <ul class="list-disc pl-4 mt-1">
+                            ${item.paidMonths.map(pm => {
+                                const monthName = monthNames[(item.startMonthIndex + pm.monthIndex) % 12];
+                                const paidDate = new Date(pm.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+                                return `<li>${monthName} (${pm.price.toFixed(2)} ₺): ${paidDate}</li>`;
+                            }).join('')}
+                        </ul>
+                    </div>
+                `;
+                
+                let durationDisplay;
+                if (item.isFixedCredit) {
+                    durationDisplay = '1 / 1';
+                } else {
+                    const completedMonthCount = item.paidMonths.length;
+                    const totalMonths = item.duration;
+                    durationDisplay = `${completedMonthCount} / ${totalMonths}`;
+                }
+
+
+                newRow.innerHTML = `
+                    <td class="py-2 px-4 whitespace-nowrap">
+                        <input type="checkbox" data-id="${item.id}" class="completed-checkbox form-checkbox h-4 w-4 text-blue-600 rounded-md cursor-pointer">
+                    </td>
+                    <td class="py-2 px-4">${detailsHtml}</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${item.price.toFixed(2)} ₺</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${durationDisplay}</td>
+                    <td class="py-2 px-4 whitespace-nowrap">${completionDate}</td>
+                `;
+                tableBody.appendChild(newRow);
+            });
+        }
+        
+        window.toggleDetails = function(element, itemId) {
+            const detailsDiv = document.getElementById(`details-${itemId}`);
+            const arrowIcon = element.querySelector('.arrow-icon');
+            detailsDiv.classList.toggle('hidden');
+            arrowIcon.classList.toggle('rotate-180');
+        };
+
+        document.getElementById('paymentTableBodyActive').addEventListener('change', (event) => {
+            if (event.target.classList.contains('month-checkbox-input')) {
+                const itemId = parseInt(event.target.getAttribute('data-id'));
+                const monthIndex = parseInt(event.target.getAttribute('data-month-index'));
+                const isChecked = event.target.checked;
+
+                const item = payments.find(p => p.id === itemId);
+                if (item) {
+                    if (isChecked) {
+                        const row = event.target.closest('tr');
+                        const priceInput = row.querySelector('.fixed-price-input');
+                        const price = item.isFixedCredit ? parseFloat(priceInput.value) : item.price;
+                        if (!item.paidMonths.some(pm => pm.monthIndex === monthIndex)) {
+                            item.paidMonths.push({
+                                monthIndex: monthIndex,
+                                date: new Date().toISOString(),
+                                price: price
+                            });
+                        }
+                    } else {
+                        item.paidMonths = item.paidMonths.filter(pm => pm.monthIndex !== monthIndex);
+                    }
+                    item.paidMonths.sort((a, b) => a.monthIndex - b.monthIndex);
+                    
+                    if (!item.isFixedCredit && item.paidMonths.length > 0 && item.paidMonths.length % 3 === 0) {
+                        const row = event.target.closest('tr');
+                        row.classList.add('bg-green-300');
+                        setTimeout(() => {
+                            renderTable();
+                        }, 500);
+                    }
+                }
+                
+                renderTable();
+            }
+        });
+
+        window.calculateTotal = function(items) {
+            const totalAmountCell = document.getElementById('totalAmountActive');
+            const currentMonthIndex = new Date().getMonth();
+            let total = 0;
+            items.forEach(item => {
+                if (item.isFixedCredit) {
+                    const priceInput = document.querySelector(`.fixed-price-input[data-id="${item.id}"]`);
+                    if (priceInput) {
+                        total += parseFloat(priceInput.value) || 0;
+                    }
+                } else {
+                    total += item.price;
+                }
+            });
+            totalAmountCell.textContent = `${total.toFixed(2)} ₺`;
+        };
+        
+        window.saveData = function() {
+            try {
+                const serializedPayments = JSON.stringify(payments);
+                localStorage.setItem('paymentTrackerData', serializedPayments);
+            } catch (error) {
+                console.error("Veri kaydetme hatası:", error);
+            }
+        };
+
+        window.loadData = function() {
+            try {
+                const serializedPayments = localStorage.getItem('paymentTrackerData');
+                if (serializedPayments) {
+                    payments = JSON.parse(serializedPayments);
+                } else {
+                    payments = [];
+                }
+                renderTable();
+            } catch (error) {
+                console.error("Veri yükleme hatası:", error);
+            }
+        };
+
+        // Aktif ödemeleri silme işlevi
+        window.deleteSelectedActiveItems = function() {
+            const selectedIds = Array.from(document.querySelectorAll('#paymentTableBodyActive .active-checkbox:checked')).map(checkbox => parseInt(checkbox.dataset.id));
+            if (selectedIds.length === 0) {
+                console.error("Lütfen silmek istediğiniz ödemeleri seçin.");
+                return;
+            }
+            payments = payments.filter(item => !selectedIds.includes(item.id));
+            renderTable();
+            saveData();
+        };
+
+        window.deleteSelectedCompletedItems = function() {
+            const selectedIds = Array.from(document.querySelectorAll('.completed-checkbox:checked')).map(checkbox => parseInt(checkbox.dataset.id));
+            if (selectedIds.length === 0) {
+                console.error("Lütfen silmek istediğiniz ödemeleri seçin.");
+                return;
+            }
+            payments = payments.filter(item => !selectedIds.includes(item.id));
+            renderTable();
+            saveData();
+        };
+
+        window.deleteAllCompletedItems = function() {
+            payments = payments.filter(item => !item.isCompleted);
+            renderTable();
+            saveData();
+        };
+        
+        window.showCelebrationModal = function(message) {
+            document.getElementById('celebrationMessage').textContent = message;
+            document.getElementById('celebrationModal').classList.remove('hidden');
+        };
+
+        window.closeCelebrationModal = function() {
+            document.getElementById('celebrationModal').classList.add('hidden');
+        };
+        
+        window.showPwaManualModal = function() {
+            const instructionsDiv = document.getElementById('manualInstructions');
+            instructionsDiv.innerHTML = '';
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isiOS) {
+                instructionsDiv.innerHTML = `
+                    <p>1. Safari'de, alt menüdeki paylaşım simgesine (➡️) dokunun.</p>
+                    <p>2. Açılan menüde, "Ana Ekrana Ekle" seçeneğine dokunun.</p>
+                    <p>3. Uygulamayı eklemek için "Ekle" düğmesine dokunun.</p>
+                `;
+            } else {
+                instructionsDiv.innerHTML = `
+                    <p>1. Tarayıcının sağ üst köşesindeki üç noktaya (⋮) dokunun.</p>
+                    <p>2. Açılan menüde, "Ana Ekrana Ekle" seçeneğine dokunun.</p>
+                    <p>3. Uygulamayı eklemek için "Ekle" düğmesine dokunun.</p>
+                `;
+            }
+            document.getElementById('pwaManualModal').classList.remove('hidden');
+        };
+
+        window.closePwaManualModal = function() {
+            document.getElementById('pwaManualModal').classList.add('hidden');
+        };
+
+        window.saveDataAndCelebrate = function() {
+            const newlyCompletedItems = payments.filter(item => item.paidMonths.length === item.duration && !item.isCompleted);
+            const completedFixedCredits = payments.filter(item => item.isFixedCredit && item.paidMonths.length > 0);
+            
+            if (newlyCompletedItems.length > 0 || completedFixedCredits.length > 0) {
+                const totalAmountFreed = newlyCompletedItems.reduce((sum, item) => sum + item.price, 0);
+                const totalFixedAmount = completedFixedCredits.reduce((sum, item) => sum + item.paidMonths.find(pm => pm.monthIndex === new Date().getMonth())?.price || item.price, 0);
+                
+                const totalAmountCelebrated = totalAmountFreed + totalFixedAmount;
+
+                const randomIndex = Math.floor(Math.random() * celebrationMessages.length);
+                const randomMessage = celebrationMessages[randomIndex];
+                
+                const messageWithDetails = `${randomMessage} Toplamda aylık ${totalAmountCelebrated.toFixed(2)} ₺ yükünden kurtuldun!`;
+                
+                showCelebrationModal(messageWithDetails);
+
+                newlyCompletedItems.forEach(item => {
+                    item.isCompleted = true;
+                    item.completionDate = new Date().toISOString();
+                });
+
+                completedFixedCredits.forEach(item => {
+                    const completedCopy = {
+                        ...item,
+                        id: Date.now(), 
+                        isCompleted: true,
+                        completionDate: new Date().toISOString()
+                    };
+                    
+                    payments.push(completedCopy);
+                    item.paidMonths = [];
+                    item.startMonthIndex = (item.startMonthIndex + 1) % 12;
+                });
+            }
+            saveData();
+            renderTable();
+        };
+    </script>
+</body>
+</html>
