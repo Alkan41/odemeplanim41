@@ -1,2 +1,0 @@
-# odemeplanim41
-ödeme
